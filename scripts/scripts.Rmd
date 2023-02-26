@@ -1,0 +1,568 @@
+---
+title: "GSB_script"
+author: "Gabriel Silvestre Rocha"
+date: "2023-02-26"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(knitr)
+library(devtools)
+library(ggbiplot)
+library(corrplot)
+library(readxl)
+library(ARTool)
+library(lsmeans)
+library(ggeasy)
+library(vegan)
+library(factoextra)
+library(FactoMineR)
+library(multcomp)
+library(tinytex)
+```
+
+# Data Upload
+```{r}
+setwd("C:/Users/gaaah/OneDrive/Área de Trabalho/Mestrado/Urochloa/resultados")
+
+#Load main data
+db <- readxl::read_xlsx("dbgeral2.xlsx", col_names = TRUE, col_types = NULL, na = "")
+
+#Replace values
+db$Depth[db$Depth == "40"] <- "30"
+
+#Convert variables to factor
+db$Depth <- as.factor(db$Depth)
+db$Genotype <- as.factor(db$Genotype)
+
+#Remove rows
+dbc <- db[-c(49:60),]
+
+#Load correlation data
+dbcor <- readxl::read_xlsx("dbp.xlsx", col_names = TRUE, col_types = NULL, na = "")
+
+#Convert variables to factor
+dbcor$Depth <- as.factor(dbcor$Depth)
+dbcor$Genotype <- as.factor(dbcor$Genotype)
+
+#Remove rows
+dbcor10c <- dbcor20c <- dbcor30c <- NULL
+
+```
+
+## Process Data for Depth = 10
+```{r}
+#Subset main data
+res1 <- db[(db$Depth == "10"),]
+db10 <- as.data.frame(res1)
+db10$Depth = NULL
+db10$Sample_ID = NULL
+db10$Genotype <- as.factor(db10$Genotype)
+
+#Remove rows
+db10c <- db10[-c(17:20),]
+
+#Subset correlation data
+res1 <- dbcor[(dbcor$Depth == "10"),]
+dbcor10 <- as.data.frame(res1)
+dbcor10$Depth = NULL
+dbcor10$Sample_ID = NULL
+dbcor10$Genotype <- as.factor(dbcor10$Genotype)
+
+#Remove rows
+dbcor10c <- dbcor10[-c(17:20),]
+
+```
+
+## Process Data for Depth = 20
+```{r}
+#Subset main data
+res2 <- db[(db$Depth == "20"),]
+db20 <- as.data.frame(res2)
+db20$Depth = NULL
+db20$Sample_ID = NULL
+db20$Genotype <- as.factor(db20$Genotype)
+
+#Remove rows
+db20c <- db20[-c(17:20),]
+
+#Subset correlation data
+res2 <- dbcor[(dbcor$Depth == "20"),]
+dbcor20 <- as.data.frame(res2)
+dbcor20$Depth = NULL
+dbcor20$Sample_ID = NULL
+dbcor20$Genotype <- as.factor(dbcor20$Genotype)
+
+#Remove rows
+dbcor20c <- dbcor20[-c(17:20),]
+
+```
+
+## Process Data for Depth = 30
+```{r}
+#Subset main data
+res3 <- db[(db$Depth == "30"),]
+db30 <- as.data.frame(res3)
+db30$Depth = NULL
+db30$Sample_ID = NULL
+db30$Genotype <- as.factor(db30$Genotype)
+
+#Remove rows
+db30c <- db30[-c(17:20),]
+
+#Subset correlation data
+res3=(dbcor[(dbcor$Depth=="40"),])
+dbcor30 <- as.data.frame(res3)
+dbcor30$Depth = NULL
+dbcor30$Sample_ID = NULL
+dbcor30$Genotype <- as.factor(dbcor30$Genotype)
+
+#Remove rows
+dbcor30c = dbcor30[-c(17:20),]
+
+```
+
+# Ploting Graphs
+
+## qPCR genes quantification
+
+### Bacteria 16S
+```{r}
+bbac <- db %>%
+  #filter(!(Genotype %in% c("Ipypora", "Control"))) %>%
+  ggplot(aes(x=Genotype, y=bac2, fill=Genotype)) +
+  geom_boxplot() +
+  facet_grid(.~Depth, scales="free", space="free_x") +
+  scale_fill_manual(values=c("#8E6698", "#4477AA", "#AA7744", "#E7B800", "#117733"))+
+  geom_jitter(color="black", size=0.4, alpha=0.9) +
+  theme_bw() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) +
+  theme(legend.position="right",plot.title = element_text(size=11)) +
+  ggtitle("Bacteria abundance") +
+  xlab("Genotypes") +
+  ylab("Bacteria 16S gene (gene copies/ng gDNA)")+
+  ggeasy::easy_center_title() +
+  ggeasy::easy_adjust_legend("center")
+bbac
+```
+
+### Archaea 16S
+```{r}
+barc <- db %>%
+  ggplot(aes(x=Genotype, y=archea, fill=Genotype)) +
+  geom_boxplot() +
+  facet_grid(.~Depth, scales="free", space="free_x") +
+  scale_fill_manual(values=c("#8E6698", "#4477AA", "#AA7744", "#E7B800", "#117733"))+
+  geom_jitter(color="black", size=0.4, alpha=0.9) +
+  theme_bw() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) +
+  theme(legend.position="right",plot.title = element_text(size=11)) +
+  ggtitle("Archaea abundance") +
+  xlab("Genotypes") +
+  ylab("Archaea 16S gene (gene copies/ng gDNA)")+
+  ggeasy::easy_center_title() +
+  ggeasy::easy_adjust_legend("center")
+barc
+```
+
+### Fungi ITS
+```{r}
+bits <- db %>%
+  ggplot(aes(x=Genotype, y=ITS, fill=Genotype)) +
+  geom_boxplot() +
+  facet_grid(.~Depth, scales="free", space="free_x") +
+  scale_fill_manual(values=c("#8E6698", "#4477AA", "#AA7744", "#E7B800", "#117733"))+
+  geom_jitter(color="black", size=0.4, alpha=0.9) +
+  theme_bw() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) +
+  theme(legend.position="right",plot.title = element_text(size=11)) +
+  ggtitle("Fungi abundance") +
+  xlab("Genotypes") +
+  ylab("Fungi ITS gene (gene copies/ng gDNA)")+
+  ggeasy::easy_center_title() +
+  ggeasy::easy_adjust_legend("center")
+bits
+```
+
+### Alkaline phosphatase production by phoD gene
+```{r}
+bphod <- db %>%
+  ggplot(aes(x=Genotype, y=phoD, fill=Genotype)) +
+  geom_boxplot() +
+  facet_grid(.~Depth, scales="free", space="free_x") +
+  scale_fill_manual(values=c("#8E6698", "#4477AA", "#AA7744", "#E7B800", "#117733"))+
+  geom_jitter(color="black", size=0.4, alpha=0.9) +
+  theme_bw() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) +
+  theme(legend.position="right",plot.title = element_text(size=11)) +
+  ggtitle("phoD gene abundance") +
+  xlab("Genotypes") +
+  ylab("phoD gene (gene copies/ng gDNA)")+
+  scale_y_log10()+
+  ggeasy::easy_center_title() +
+  ggeasy::easy_adjust_legend("center")
+bphod
+```
+
+### P solubilization via pqqC
+```{r}
+bpqqc <- db %>%
+  ggplot(aes(x=Genotype, y=pqqc3, fill=Genotype)) +
+  geom_boxplot() +
+  facet_grid(.~Depth, scales="free", space="free_x") +
+  scale_fill_manual(values=c("#8E6698", "#4477AA", "#AA7744", "#E7B800", "#117733"))+
+  geom_jitter(color="black", size=0.4, alpha=0.9) +
+  theme_bw() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) +
+  theme(legend.position="right",plot.title = element_text(size=11)) +
+  ggtitle("pqqC gene abundance") +
+  xlab("Genotypes") +
+  ylab("pqqC gene (gene copies/ng gDNA)") +
+  ggeasy::easy_center_title() +
+  ggeasy::easy_adjust_legend("center")
+bpqqc
+```
+
+### AMF colonization
+```{r}
+bfma <- db10c %>%
+  ggplot(aes(x=Genotype, y=colonization, fill=Genotype)) +
+  geom_boxplot() +
+  scale_fill_manual(values=c("#4477AA", "#AA7744", "#E7B800", "#117733"))+
+  geom_jitter(color="black", size=0.4, alpha=0.9) +
+  theme_bw() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) +
+  theme(legend.position="right",plot.title = element_text(size=11)) +
+  ggtitle("AMF colonization") +
+  xlab("Genotypes") +
+  ylab("AMF colonization (%)")+
+  ggeasy::easy_center_title() +
+  ggeasy::easy_adjust_legend("center")
+bfma
+```
+
+## Plotting boxplots all together
+```{r}
+ggarrange(barc, bbac, bits, bphod, bpqqc, bfma,
+          labels = c("A", "B", "C", "D", "E", "F"),
+          common.legend = TRUE,
+          legend = "bottom",
+          ncol = 3, nrow = 2)
+```
+
+## Correlation plots
+### pqqC gene
+```{r}
+pixpqq<-ggplot(db, aes(pqqc3, NaOHi)) + 
+  geom_point(size = 4) +
+  #facet_wrap(db$Genotype, nrow = 1)+
+  geom_smooth(method = lm, se =T, color = "black") +
+  stat_cor(aes(label = paste(..r.label.., ..p.label.., sep = "~`,`~")),
+           r.accuracy = 0.01,
+           p.accuracy = 0.01, size = 4,
+           label.x = 1200, label.y = 80) +
+  stat_regline_equation(aes(label = ..eq.label..),
+                        label.x = 1200, label.y = 75, size = 4) +
+  theme_bw()+
+  theme(legend.position="right",plot.title = element_text(size=11), axis.text.y=element_text(size = 13), axis.text.x=element_text(size = 13)) +
+  ggtitle("") +
+  ylab("Inorganic P (mg/Kg)") +
+  xlab("pqqC gene (gene copies/ng gDNA)") +
+  scale_fill_manual(values=c("#8E6698", "#4477AA", "#AA7744", "#E7B800", "#117733"))
+pixpqq
+
+pixpqq2<-ggplot(db, aes(pqqc3, NaOHi)) + 
+  geom_point(size = 4) +
+  facet_wrap(db$Genotype, nrow = 1)+
+  geom_smooth(method = lm, se =T, color = "black") +
+  stat_cor(aes(label = paste(..r.label.., ..p.label.., sep = "~`,`~")),
+           r.accuracy = 0.01,
+           p.accuracy = 0.01, size = 4,
+           label.x = 10, label.y = 85) +
+  stat_regline_equation(aes(label = ..eq.label..),
+                        label.x = 10, label.y = 78, size = 4) +
+  theme_bw()+
+  theme(legend.position="right",plot.title = element_text(size=11), axis.text.y=element_text(size = 13), axis.text.x=element_text(size = 13)) +
+  ggtitle("") +
+  ylab("Inorganic P (mg/Kg)") +
+  xlab("pqqC gene (gene copies/ng gDNA)") +
+  scale_fill_manual(values=c("#8E6698", "#4477AA", "#AA7744", "#E7B800", "#117733"))
+pixpqq2
+
+arcxpqq<-ggplot(db, aes(pqqc2, archea)) + 
+  geom_point(size = 4) +
+  #facet_wrap(db$Genotype, nrow = 1)+
+  geom_smooth(method = lm, se =T, color = "black") +
+  stat_cor(aes(label = paste(..r.label.., ..p.label.., sep = "~`,`~")),
+           r.accuracy = 0.01,
+           p.accuracy = 0.01, size = 4,
+           label.x = 50, label.y = 32000) +
+  stat_regline_equation(aes(label = ..eq.label..),
+                        label.x = 50, label.y = 30000, size = 4) +
+  theme_bw()+
+  theme(legend.position="right",plot.title = element_text(size=11), axis.text.y=element_text(size = 13), axis.text.x=element_text(size = 13)) +
+  ggtitle("") +
+  ylab("Archaea 16S gene (gene copies/ng gDNA)") +
+  xlab("pqqC gene (gene copies/ng gDNA)") +
+  scale_fill_manual(values=c("#8E6698", "#4477AA", "#AA7744", "#E7B800", "#117733"))
+arcxpqq
+
+arcxpqq2<-ggplot(db, aes(pqqc2, archea)) + 
+  geom_point(size = 4) +
+  facet_wrap(db$Genotype, nrow = 1)+
+  geom_smooth(method = lm, se =T, color = "black") +
+  stat_cor(aes(label = paste(..r.label.., ..p.label.., sep = "~`,`~")),
+           r.accuracy = 0.01,
+           p.accuracy = 0.01, size = 4,
+           label.x = 50, label.y = 32000) +
+  stat_regline_equation(aes(label = ..eq.label..),
+                        label.x = 50, label.y = 30000, size = 4) +
+  theme_bw()+
+  theme(legend.position="right",plot.title = element_text(size=11), axis.text.y=element_text(size = 13), axis.text.x=element_text(size = 13)) +
+  ggtitle("") +
+  ylab("Archaea 16S gene (gene copies/ng gDNA)") +
+  xlab("pqqC gene (gene copies/ng gDNA)") +
+  scale_fill_manual(values=c("#8E6698", "#4477AA", "#AA7744", "#E7B800", "#117733"))
+arcxpqq2
+```
+
+## Plotting all together
+```{r}
+ggarrange(pixpqq,pixpqq2, arcxpqq, arcxpqq2,
+          labels = c("A", "B", "C","D"),
+          common.legend = TRUE,
+          legend = "none",
+          ncol = 2, nrow = 2)
+```
+
+### phoD gene
+```{r}
+pdxfal<-ggplot(db, aes(fosfalk, phoD)) + 
+  geom_point(size = 4) +
+  #facet_wrap(dbc$Genotype, nrow = 1)+
+  geom_smooth(method = lm, se =T, color = "black") +
+  stat_cor(aes(label = paste(..r.label.., ..p.label.., sep = "~`,`~")),
+           r.accuracy = 0.01,
+           p.accuracy = 0.01, size = 4,
+           label.x = 20, label.y = 78000) +
+  stat_regline_equation(aes(label = ..eq.label..),
+                        label.x = 20, label.y = 72000, size = 4) +
+  theme_bw()+
+  theme(legend.position="right",plot.title = element_text(size=11), axis.text.y=element_text(size = 13), axis.text.x=element_text(size = 13)) +
+  ggtitle("") +
+  xlab("Alk. phosp. acitivty (ug p-nitrofenol/g h-1)") +
+  ylab("phoD gene (gene copies/ng gDNA)") +
+  scale_fill_manual(values=c("#8E6698", "#4477AA", "#AA7744", "#E7B800", "#117733"))
+pdxfal
+
+pdxfal2<-ggplot(db, aes(fosfalk, phoD)) + 
+  geom_point(size = 4) +
+  facet_wrap(db$Genotype, nrow = 1)+
+  geom_smooth(method = lm, se =T, color = "black") +
+  stat_cor(aes(label = paste(..r.label.., ..p.label.., sep = "~`,`~")),
+           r.accuracy = 0.01,
+           p.accuracy = 0.01, size = 4,
+           label.x = 20, label.y = 78000) +
+  stat_regline_equation(aes(label = ..eq.label..),
+                        label.x = 20, label.y = 72000, size = 4) +
+  theme_bw()+
+  theme(legend.position="right",plot.title = element_text(size=11), axis.text.y=element_text(size = 13), axis.text.x=element_text(size = 13)) +
+  ggtitle("") +
+  xlab("Alk. phosp. acitivty (ug p-nitrofenol/g h-1)") +
+  ylab("phoD gene (gene copies/ng gDNA)") +
+  scale_fill_manual(values=c("#8E6698", "#4477AA", "#AA7744", "#E7B800", "#117733"))
+pdxfal2
+
+pdxpi<-ggplot(db, aes(NaOHi, phoD)) + 
+  geom_point(size = 4) +
+  #facet_wrap(db$Genotype, nrow = 1)+
+  geom_smooth(method = lm, se =T, color = "black") +
+  stat_cor(aes(label = paste(..r.label.., ..p.label.., sep = "~`,`~")),
+           r.accuracy = 0.01,
+           p.accuracy = 0.01, size = 4,
+           label.x = 10, label.y = 78000) +
+  stat_regline_equation(aes(label = ..eq.label..),
+                        label.x = 10, label.y = 72000, size = 4) +
+  theme_bw()+
+  theme(legend.position="right",plot.title = element_text(size=11), axis.text.y=element_text(size = 13), axis.text.x=element_text(size = 13)) +
+  ggtitle("") +
+  xlab("Inorganic P (mg/kg)") +
+  ylab("phoD gene (gene copies/ng gDNA)") +
+  scale_fill_manual(values=c("#8E6698", "#4477AA", "#AA7744", "#E7B800", "#117733"))
+pdxpi
+
+pdxpi2<-ggplot(db, aes(NaOHi, phoD)) + 
+  geom_point(size = 4) +
+  facet_wrap(db$Genotype, nrow = 1)+
+  geom_smooth(method = lm, se =T, color = "black") +
+  stat_cor(aes(label = paste(..r.label.., ..p.label.., sep = "~`,`~")),
+           r.accuracy = 0.01,
+           p.accuracy = 0.01, size = 4,
+           label.x = 10, label.y = 78000) +
+  stat_regline_equation(aes(label = ..eq.label..),
+                        label.x = 10, label.y = 72000, size = 4) +
+  theme_bw()+
+  theme(legend.position="right",plot.title = element_text(size=11), axis.text.y=element_text(size = 13), axis.text.x=element_text(size = 13)) +
+  ggtitle("") +
+  xlab("Inorganic P (mg/kg)") +
+  ylab("phoD gene (gene copies/ng gDNA)") +
+  scale_fill_manual(values=c("#8E6698", "#4477AA", "#AA7744", "#E7B800", "#117733"))
+pdxpi2
+```
+
+## Plotting all together
+```{r}
+ggarrange(pdxfal, pdxfal2, pdxpi, pdxpi2,
+          labels = c("A", "B", "C", "D"),
+          common.legend = TRUE,
+          legend = "none",
+          ncol = 2, nrow = 2)
+```
+
+# Statistical analysis
+## AMF colonization
+```{r}
+stpqq <- lm(colonization ~ Genotype, data = db10c)
+mc <- glht(stpqq, linfct = mcp(Genotype = "Tukey"))
+mc_letters <- cld(mc, Letters = letters)
+print(mc_letters)
+```
+
+## Bacteria 16S
+```{r}
+#10cm
+stpqq <- lm(bac2 ~ Genotype, data = db10)
+mc <- glht(stpqq, linfct = mcp(Genotype = "Tukey"))
+mc_letters <- cld(mc, Letters = letters)
+print(mc_letters)
+
+#30cm
+stpqq <- lm(bac2 ~ Genotype, data = db30)
+mc <- glht(stpqq, linfct = mcp(Genotype = "Tukey"))
+mc_letters <- cld(mc, Letters = letters)
+print(mc_letters)
+```
+
+## Archaea 16S
+```{r}
+#10cm
+stpqq <- lm(archea ~ Genotype, data = db10)
+mc <- glht(stpqq, linfct = mcp(Genotype = "Tukey"))
+mc_letters <- cld(mc, Letters = letters)
+print(mc_letters)
+
+#20cm
+stpqq <- lm(archea ~ Genotype, data = db20)
+mc <- glht(stpqq, linfct = mcp(Genotype = "Tukey"))
+mc_letters <- cld(mc, Letters = letters)
+print(mc_letters)
+
+#30cm
+stpqq <- lm(archea ~ Genotype, data = db30)
+mc <- glht(stpqq, linfct = mcp(Genotype = "Tukey"))
+mc_letters <- cld(mc, Letters = letters)
+print(mc_letters)
+```
+
+## Fungi ITS
+```{r}
+#20cm
+stpqq <- lm(ITS ~ Genotype, data = db20)
+mc <- glht(stpqq, linfct = mcp(Genotype = "Tukey"))
+mc_letters <- cld(mc, Letters = letters)
+print(mc_letters)
+
+#30cm
+stpqq <- lm(ITS ~ Genotype, data = db30)
+mc <- glht(stpqq, linfct = mcp(Genotype = "Tukey"))
+mc_letters <- cld(mc, Letters = letters)
+print(mc_letters)
+```
+
+# Principal Components Analysis (PCA)
+### Depth: 0-10cm
+```{r}
+pca1 <- PCA(scale(dbcor10[,c(4,8,10:11,13,15:17,19:22)]), scale = TRUE)
+fviz_pca_biplot(pca1, habillage = dbcor10$Genotype, 
+                addEllipses = TRUE, 
+                pointshape = 19,
+                pointsize = 2,
+                geom = c("point"),
+                ggtheme = theme_pubr(),
+                palette = c("#8E6698","#4477AA", "#AA7744", "#E7B800", "#117733"),
+                ellipse.type = "convex", col.var = "black")
+
+factors1 <- as.data.frame(as.factor(dbcor10$Genotype))
+dbcor10_2 <- as.data.frame(dbcor10[,c(4,8,10:11,13,15:17,19:22)])
+vegan::adonis2(dbcor10_2 ~ factors1[c(1:20),], permutations = 999, method = "bray")
+
+# Contributions of variables to PC1
+fviz_contrib(pca1, choice = "var", axes = 1, top = 5)
+# Contributions of variables to PC2
+fviz_contrib(pca1, choice = "var", axes = 2, top = 5)
+```
+
+### Depth: 10-20cm
+```{r}
+pca20 <- PCA(scale(dbcor20[,c(4,8,10:11,13,15:17,19:22)]), scale = TRUE)
+fviz_pca_biplot(pca20, habillage = dbcor10$Genotype, 
+                addEllipses = TRUE, 
+                pointshape = 19,
+                pointsize = 2,
+                geom = c("point"),
+                ggtheme = theme_pubr(),
+                palette = c("#8E6698","#4477AA", "#AA7744", "#E7B800", "#117733"),
+                ellipse.type = "convex", col.var = "black")
+
+factors20 <- as.data.frame(as.factor(dbcor20$Genotype))
+dbcor20_2 <- as.data.frame(dbcor20[,c(4,8,10:11,13,15:17,19:22)])
+vegan::adonis2(dbcor20_2 ~ factors20[c(1:20),], permutations = 999, method = "bray") #p = 0.001 ***
+
+# Contributions of variables to PC1
+fviz_contrib(pca20, choice = "var", axes = 1, top = 5)
+# Contributions of variables to PC2
+fviz_contrib(pca20, choice = "var", axes = 2, top = 5)
+
+```
+
+### Depth: 20-30cm
+```{r}
+pca30 <- PCA(scale(dbcor30[,c(4,8,10:11,13,15:17,19:22)]), scale = TRUE)
+fviz_pca_biplot(pca30, habillage = dbcor10$Genotype, 
+                addEllipses = TRUE, 
+                pointshape = 19,
+                pointsize = 2,
+                geom = c("point"),
+                ggtheme = theme_pubr(),
+                palette = c("#8E6698","#4477AA", "#AA7744", "#E7B800", "#117733"),
+                ellipse.type = "convex", col.var = "black")
+
+factors30 <- as.data.frame(as.factor(dbcor30$Genotype))
+dbcor30_2 <- as.data.frame(dbcor30[,c(4,8,10:11,13,15:17,19:22)])
+vegan::adonis2(dbcor30_2 ~ factors30[c(1:20),], permutations = 999, method = "bray") #p = 0.001 ***
+
+# Contributions of variables to PC1
+fviz_contrib(pca30, choice = "var", axes = 1, top = 5)
+# Contributions of variables to PC2
+fviz_contrib(pca30, choice = "var", axes = 2, top = 5)
+```
+
