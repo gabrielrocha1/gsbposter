@@ -14,4 +14,5 @@ poster/: contais a digital version of the Poster and the Abstract.
 Gabriel Silvestre Rocha
 
 gabrielrocha1@usp.br
+
 https://www.linkedin.com/in/rochags/
